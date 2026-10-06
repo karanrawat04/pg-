@@ -1,0 +1,307 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Organization (PG Owner Business)
+model Organization {
+  id            String                     @id @default(uuid())
+  name          String
+  ownerPhone    String                     @unique
+  ownerEmail    String?                    @unique
+  gstNumber     String?
+  status        String                     @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+
+  // Payment Gateway Configuration (Configured by PG Owner for Tenants)
+  upiId              String?
+  upiName            String?
+  isUpiEnabled       Boolean                    @default(false)
+  razorpayKeyId      String?
+  razorpayKeySecret  String?
+  isRazorpayEnabled  Boolean                    @default(false)
+
+  properties    Property[]
+  users         User[]
+  subscriptions OrganizationSubscription[]
+
+  @@map("organizations")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  OWNER
+  CARETAKER
+  TENANT
+}
+
+// 2. System Users
+model User {
+  id             String        @id @default(uuid())
+  organizationId String?
+  fullName       String
+  phone          String        @unique
+  email          String?       @unique
+  role           UserRole      @default(TENANT)
+  passwordHash   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tenantProfile  Tenant?
+
+  @@map("users")
+}
+
+// 3. Property / Building (Dropdown switcher target)
+model Property {
+  id             String      @id @default(uuid())
+  organizationId String
+  name           String      // e.g., "Sunshine Boys PG - HSR Layout"
+  address        String
+  city           String
+  genderType     String      @default("UNISEX") // MALE, FEMALE, UNISEX
+  totalFloors    Int         @default(1)
+  amenities      String[]    @default([])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  floors         Floor[]
+  rooms          Room[]
+  complaints     Complaint[]
+
+  @@map("properties")
+}
+
+// 4. Floor
+model Floor {
+  id          String   @id @default(uuid())
+  propertyId  String
+  floorNumber Int      // 0 for Ground, 1 for 1st Floor, etc.
+  name        String?
+
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rooms       Room[]
+
+  @@map("floors")
+}
+
+// 5. Room
+model Room {
+  id            String   @id @default(uuid())
+  propertyId    String
+  floorId       String
+  roomNumber    String   // e.g. "101", "204"
+  roomType      String   @default("DOUBLE") // SINGLE, DOUBLE, TRIPLE, FOUR_SHARING
+  baseRent      Decimal  @db.Decimal(10, 2)
+  hasAc         Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  floor         Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  beds          Bed[]
+  complaints    Complaint[]
+
+  @@unique([floorId, roomNumber])
+  @@map("rooms")
+}
+
+enum BedStatus {
+  VACANT
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+// 6. Bed (Granular booking unit)
+model Bed {
+  id         String     @id @default(uuid())
+  roomId     String
+  bedNumber  String     // "101-A", "101-B"
+  status     BedStatus  @default(VACANT)
+  customRent Decimal?   @db.Decimal(10, 2)
+  createdAt  DateTime   @default(now())
+
+  room       Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  stays      TenantStay[]
+
+  @@map("beds")
+}
+
+// 7. Tenant Profile
+model Tenant {
+  id               String       @id @default(uuid())
+  userId           String       @unique
+  emergencyName    String?
+  emergencyPhone   String?
+  permanentAddress String?
+  workplace        String?      // Company or College
+  idProofType      String?      // AADHAAR, PASSPORT, PAN, VOTER_ID
+  idProofNumber    String?
+  kycStatus        String       @default("VERIFIED") // PENDING, VERIFIED, REJECTED
+  idProofUrls      String[]     @default([])
+  createdAt        DateTime     @default(now())
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stays            TenantStay[]
+  complaints       Complaint[]
+
+  @@map("tenants")
+}
+
+// 8. Tenant Stay (Contract mapping tenant to bed)
+model TenantStay {
+  id              String    @id @default(uuid())
+  tenantId        String
+  bedId           String
+  checkInDate     DateTime
+  checkOutDate    DateTime?
+  agreedRent      Decimal   @db.Decimal(10, 2)
+  securityDeposit Decimal   @db.Decimal(10, 2)
+  depositRefunded Decimal?  @db.Decimal(10, 2)
+  status          String    @default("ACTIVE") // ACTIVE, NOTICE_PERIOD, CHECKED_OUT
+  createdAt       DateTime  @default(now())
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bed             Bed       @relation(fields: [bedId], references: [id])
+  invoices        Invoice[]
+
+  @@map("tenant_stays")
+}
+
+// 9. Monthly Invoicing & Zero-Fee Payment Ledger
+model Invoice {
+  id            String    @id @default(uuid())
+  tenantStayId  String
+  invoiceNumber String    @unique
+  billingMonth  String    // "2026-10"
+  rentAmount    Decimal   @db.Decimal(10, 2)
+  lateFine      Decimal   @default(0) @db.Decimal(10, 2)
+  totalDue      Decimal   @db.Decimal(10, 2)
+  amountPaid    Decimal   @default(0) @db.Decimal(10, 2)
+  status        String    @default("PENDING") // PENDING, PARTIALLY_PAID, PAID, OVERDUE
+  dueDate       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  stay          TenantStay @relation(fields: [tenantStayId], references: [id], onDelete: Cascade)
+  payments      PaymentTransaction[]
+
+  @@map("invoices")
+}
+
+// 10. Payment Transactions (PhonePe UPI / Intent - 0% Fee)
+model PaymentTransaction {
+  id           String    @id @default(uuid())
+  invoiceId    String
+  gatewayTxnId String?   @unique // PhonePe transaction ID or Bank UTR
+  paymentMode  String    @default("UPI_PHONEPE") // UPI_PHONEPE, UPI_INTENT, CASH
+  amount       Decimal   @db.Decimal(10, 2)
+  feeDeducted  Decimal   @default(0) @db.Decimal(10, 2) // 0.00 on UPI!
+  status       String    @default("PENDING") // PENDING, SUCCESS, FAILED
+  settledAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  invoice      Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payment_transactions")
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+// 11. Simplified Complaint Model (Message + Max 3 Media URLs)
+model Complaint {
+  id         String          @id @default(uuid())
+  propertyId String
+  roomId     String?
+  tenantId   String
+  category   String          // "PLUMBING", "ELECTRICAL", "WIFI", "CLEANING", "OTHER"
+  message    String          @db.Text
+  mediaUrls  String[]        @default([]) // Max 3 media URLs
+  status     ComplaintStatus @default(OPEN)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  resolvedAt DateTime?
+
+  property   Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  room       Room?           @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("complaints")
+}
+
+// 12. Super Admin SaaS Subscription Plans
+model SubscriptionPlan {
+  id            String   @id @default(uuid())
+  name          String   @unique // "Starter", "Growth", "Enterprise"
+  description   String?
+  priceMonthly  Decimal  @db.Decimal(10, 2)
+  priceYearly   Decimal  @db.Decimal(10, 2)
+  maxProperties Int      @default(1)
+  maxBeds       Int      @default(50)
+  features      String[] @default([])
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions OrganizationSubscription[]
+
+  @@map("subscription_plans")
+}
+
+// 13. PG Owner Organization Subscriptions
+model OrganizationSubscription {
+  id             String           @id @default(uuid())
+  organizationId String
+  planId         String
+  status         String           @default("ACTIVE") // TRIAL, ACTIVE, EXPIRED, SUSPENDED
+  billingCycle   String           @default("MONTHLY") // MONTHLY, YEARLY
+  startDate      DateTime         @default(now())
+  endDate        DateTime
+  autoRenew      Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan           SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("organization_subscriptions")
+}
+
+// 14. Email OTP Verification Model
+model EmailOtp {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("email_otps")
+}
+
+// 15. Platform Payment Gateway Configuration (Configured by Super Admin for SaaS Plans)
+model PlatformPaymentConfig {
+  id                String   @id @default("platform_payment_config")
+  upiId             String?
+  upiName           String?
+  isUpiEnabled      Boolean  @default(false)
+  razorpayKeyId     String?
+  razorpayKeySecret String?
+  isRazorpayEnabled Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+
+  @@map("platform_payment_config")
+}
+
