@@ -66,52 +66,16 @@ export const HeaderSwitcher: React.FC<HeaderSwitcherProps> = ({
       </div> */}
 
       {/* Mobile App Header */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        background: 'rgba(12, 18, 34, 0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        padding: '10px 16px',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-        }}>
+      <header className="mobile-app-header">
+        <div className="mobile-header-inner">
           {/* Left: Responsive Building Switcher Chip */}
           <button
+            type="button"
             onClick={() => setIsSheetOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: 14,
-              padding: '6px 10px 6px 8px',
-              cursor: 'pointer',
-              color: '#fff',
-              flex: '1 1 auto',
-              minWidth: 0,
-              maxWidth: '100%',
-              textAlign: 'left',
-              transition: 'all 0.15s ease',
-            }}
+            className="header-property-chip"
+            aria-label="Switch PG Building"
           >
-            <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
+            <div className="header-property-icon">
               <Building2 size={15} color="#fff" />
             </div>
 
@@ -139,36 +103,16 @@ export const HeaderSwitcher: React.FC<HeaderSwitcherProps> = ({
           </button>
 
           {/* Right: Quick Action Buttons & Logout (Owner Badge Removed) */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            flexShrink: 0,
-          }}>
+          <div className="header-actions-group">
             {activeRole === 'OWNER' && onOpenSubscription && (
               <button
                 type="button"
                 onClick={onOpenSubscription}
+                className="header-action-btn header-plan-btn"
                 title="Manage SaaS Plan & Subscription"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)',
-                  border: '1px solid rgba(168, 85, 247, 0.4)',
-                  color: '#d8b4fe',
-                  padding: '6px 9px',
-                  borderRadius: 12,
-                  fontSize: 11.5,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
               >
                 <Crown size={12} color="#c084fc" />
-                <span>Plan</span>
+                <span className="header-btn-label-hide-xs">Plan</span>
               </button>
             )}
 
@@ -176,47 +120,20 @@ export const HeaderSwitcher: React.FC<HeaderSwitcherProps> = ({
               <button
                 type="button"
                 onClick={onOpenPaymentSettings}
+                className="header-action-btn header-pay-btn"
                 title="Configure Tenant Payment Gateway & UPI"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  background: 'rgba(56, 189, 248, 0.15)',
-                  border: '1px solid rgba(56, 189, 248, 0.35)',
-                  color: '#38bdf8',
-                  padding: '6px 9px',
-                  borderRadius: 12,
-                  fontSize: 11.5,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
               >
                 <CreditCard size={12} color="#38bdf8" />
-                <span>Pay Setup</span>
+                <span className="header-btn-label-hide-xs">Pay Setup</span>
               </button>
             )}
 
             {onLogout && (
               <button
+                type="button"
                 onClick={onLogout}
+                className="header-logout-btn"
                 title="Sign Out"
-                style={{
-                  background: 'rgba(244, 63, 94, 0.1)',
-                  border: '1px solid rgba(244, 63, 94, 0.25)',
-                  color: '#fb7185',
-                  borderRadius: 10,
-                  width: 32,
-                  height: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
               >
                 <LogOut size={14} />
               </button>
