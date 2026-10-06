@@ -16,7 +16,66 @@ async function main() {
   await prisma.property.deleteMany();
   await prisma.tenant.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.organizationSubscription.deleteMany();
   await prisma.organization.deleteMany();
+
+  // 1b. Seed Standard SaaS Subscription Plans
+  const starterPlan = await prisma.subscriptionPlan.upsert({
+    where: { name: 'Starter' },
+    update: {},
+    create: {
+      name: 'Starter',
+      description: '1 PG Building, up to 50 beds',
+      priceMonthly: 999,
+      priceYearly: 9999,
+      maxProperties: 1,
+      maxBeds: 50,
+      features: ['1 PG Building', 'Up to 50 Beds', 'Direct UPI QR Payments', 'Tenant KYC Management'],
+      isActive: true,
+    },
+  });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { name: 'Growth' },
+    update: {},
+    create: {
+      name: 'Growth',
+      description: 'Up to 3 PG Buildings, 150 beds',
+      priceMonthly: 1999,
+      priceYearly: 19999,
+      maxProperties: 3,
+      maxBeds: 150,
+      features: ['Up to 3 PG Buildings', 'Up to 150 Beds', 'Priority Support', 'Full Analytics & Financials'],
+      isActive: true,
+    },
+  });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { name: 'Enterprise' },
+    update: {},
+    create: {
+      name: 'Enterprise',
+      description: 'Unlimited PG Buildings & Beds',
+      priceMonthly: 3999,
+      priceYearly: 39999,
+      maxProperties: 999,
+      maxBeds: 9999,
+      features: ['Unlimited Properties', 'Unlimited Beds', 'Custom Integrations', 'Dedicated Account Manager'],
+      isActive: true,
+    },
+  });
+
+  // 1c. Seed Platform Super Admin
+  await prisma.user.upsert({
+    where: { email: 'karanroliyal12@gmail.com' },
+    update: { role: 'SUPER_ADMIN' },
+    create: {
+      email: 'karanroliyal12@gmail.com',
+      fullName: 'Platform Super Admin',
+      phone: '9999999999',
+      role: 'SUPER_ADMIN',
+    },
+  });
 
   // 2. Create Organization
   const org = await prisma.organization.create({
@@ -36,6 +95,19 @@ async function main() {
       phone: '9876543210',
       email: 'rajesh@starlightliving.in',
       role: 'OWNER',
+    },
+  });
+
+  // 3b. Attach Active SaaS Plan to Seeded Organization
+  const oneYearLater = new Date();
+  oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+  await prisma.organizationSubscription.create({
+    data: {
+      organizationId: org.id,
+      planId: starterPlan.id,
+      status: 'ACTIVE',
+      billingCycle: 'YEARLY',
+      endDate: oneYearLater,
     },
   });
 

@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "PG Flow",
+    "slug": "pg-flow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#090d16",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#090d16"
+      }
+    }
+  }
+}

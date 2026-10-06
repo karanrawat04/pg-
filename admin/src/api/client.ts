@@ -1,6 +1,10 @@
 import { PlatformMetrics, Organization, SubscriptionPlan, AdminUser } from '../types';
 
-const API_BASE_URL = 'http://localhost:5050/api';
+const API_BASE_URL = 
+  import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? `http://${window.location.hostname}:5000/api`
+    : 'http://localhost:5000/api');
 
 const TOKEN_KEY = 'pgflow_superadmin_token';
 const USER_KEY = 'pgflow_superadmin_user';

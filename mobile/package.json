@@ -2,22 +2,33 @@
   "name": "pg-flow-mobile",
   "version": "1.0.0",
   "private": true,
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
+    "start": "concurrently -n \"vite,expo\" -c \"cyan,magenta\" \"vite --host\" \"expo start -c\"",
+    "expo": "concurrently -n \"vite,expo\" -c \"cyan,magenta\" \"vite --host\" \"expo start -c\"",
+    "expo:tunnel": "concurrently -n \"vite,expo\" -c \"cyan,magenta\" \"vite --host\" \"expo start --tunnel -c\"",
+    "expo:only": "expo start -c",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "node scripts/patch-rn.js"
   },
   "dependencies": {
+    "@react-native/js-polyfills": "^0.87.1",
     "@types/qrcode": "^1.5.6",
+    "expo": "^57.0.27",
     "lucide-react": "^1.16.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-native-webview": "13.16.1"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.3",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^10.0.5",
     "typescript": "^5.8.2",
     "vite": "^6.2.0"
   }

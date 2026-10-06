@@ -175,7 +175,27 @@ export const AuthController = {
 
       if (!selectedPlan) {
         selectedPlan = await prisma.subscriptionPlan.findFirst({
-          where: { name: 'Starter' },
+          where: { name: { equals: 'Starter', mode: 'insensitive' } },
+        });
+      }
+
+      if (!selectedPlan) {
+        selectedPlan = await prisma.subscriptionPlan.findFirst();
+      }
+
+      if (!selectedPlan) {
+        // Auto-create default Starter tier if database has no plans yet
+        selectedPlan = await prisma.subscriptionPlan.create({
+          data: {
+            name: 'Starter',
+            description: '1 PG Building, up to 50 beds',
+            priceMonthly: 999,
+            priceYearly: 9999,
+            maxProperties: 1,
+            maxBeds: 50,
+            features: ['Instant UPI QR', 'Tenant KYC', 'Expense Tracking'],
+            isActive: true,
+          },
         });
       }
 

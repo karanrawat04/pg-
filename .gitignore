@@ -1,0 +1,64 @@
+# ==========================================
+# PG Flow — Root .gitignore
+# ==========================================
+
+# 1. Dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+.pnp
+.pnp.js
+
+# 2. Production & Build Outputs
+dist/
+*/dist/
+build/
+*/build/
+out/
+*/out/
+.next/
+
+# 3. Environment Secrets (Keep .env.example tracked)
+.env
+.env.*
+!.env.example
+*/.env
+*/.env.*
+!*/.env.example
+*/*/.env
+*/*/.env.*
+!*/*/.env.example
+
+# 4. Expo & React Native Cache / Artifacts
+.expo/
+*/.expo/
+.expo-shared/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# 5. Local Databases & Logs
+.pgdata/
+*/.pgdata/
+logfile
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 6. IDE & Operating System Artifacts
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+Desktop.ini
